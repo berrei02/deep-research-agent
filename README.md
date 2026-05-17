@@ -1,5 +1,63 @@
-# Hello World: Deep Research Agent
+# Deep Research Agent
 
-> A simple introduction to what Deep Research Agents are and what they do.
+A Deep Research Agent built with [LangChain Deep Agents](https://docs.langchain.com/oss/python/deepagents/overview), OpenAI, and a containerized PostgreSQL database that serves as both the **agent state store** and a **virtual filesystem** backend.
 
-**Deep Research Agents** are AI-powered systems that autonomously conduct comprehensive research on complex topics by breaking down questions, searching multiple sources, and synthesizing information into detailed reports. They go beyond simple question-answering by iteratively exploring the web, retrieving documents, and refining their understanding until they have enough evidence to produce a well-grounded answer. Unlike a single-shot search, a Deep Research Agent plans its own research strategy, follows relevant leads, and cross-references findings across sources. The result is a thorough, cited report that would otherwise take a human researcher hours to compile. This repository explores the building blocks and patterns needed to create such agents.
+## Architecture
+
+```
+deep-research-agent/
+├── pyproject.toml                      # uv project + dependencies
+├── .python-version                     # Python 3.11
+├── docker-compose.yml                  # PostgreSQL 16 + pgvector container
+├── .env.example                        # Environment variables template
+├── config.py                           # Central config (loads from .env)
+├── agent.py                            # DeepResearchAgent + PostgresBackend
+└── notebooks/
+    └── research_agent_demo.ipynb       # Interactive demo notebook
+```
+
+## PostgreSQL — two roles
+
+| Role | What's stored |
+|------|--------------|
+| **Agent state** | Checkpoint of the running research graph (enables resumable runs) |
+| **Virtual filesystem** | Research artifacts written/read by the agent during a session |
+
+Both are handled by the `PostgresBackend` from `langchain-deepagent[postgres]`. See the [backends docs](https://docs.langchain.com/oss/python/deepagents/backends#use-a-virtual-filesystem) for details.
+
+## Quickstart
+
+### 1. Start PostgreSQL
+
+```bash
+docker compose up -d
+```
+
+### 2. Install dependencies (uv)
+
+```bash
+uv sync
+```
+
+### 3. Configure environment
+
+```bash
+cp .env.example .env
+# Fill in OPENAI_API_KEY (and optionally OPENAI_MODEL)
+```
+
+### 4. Open the notebook
+
+```bash
+uv run jupyter notebook notebooks/research_agent_demo.ipynb
+```
+
+## Usage from Python
+
+```python
+import asyncio
+from agent import research
+
+result = asyncio.run(research("What are the latest advances in fusion energy?"))
+print(result)
+```
